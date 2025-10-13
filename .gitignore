@@ -27,4 +27,5 @@ todo
 *.sln
 *.sw?
 
-docs
+./docs
+.firebaserc

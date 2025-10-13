@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   browserLocalPersistence,
-  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   setPersistence,
-  signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
-  updateProfile,
 } from 'firebase/auth'
 import { firebaseAuth } from '../lib/firebase.js'
 import { AuthContext } from './auth-context.js'
@@ -34,22 +33,12 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => {
     const auth = ensureAuthInstance()
+    const googleProvider = new GoogleAuthProvider()
 
-    const login = async (email, password) => {
+    const loginWithGoogle = async () => {
       setLoading(true)
       try {
-        const credentials = await signInWithEmailAndPassword(auth, email, password)
-        return credentials
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    const register = async ({ email, password, displayName }) => {
-      setLoading(true)
-      try {
-        const credentials = await createUserWithEmailAndPassword(auth, email, password)
-        if (displayName) await updateProfile(credentials.user, { displayName })
+        const credentials = await signInWithPopup(auth, googleProvider)
         return credentials
       } finally {
         setLoading(false)
@@ -69,8 +58,7 @@ export function AuthProvider({ children }) {
       user,
       loading,
       initializing,
-      login,
-      register,
+      loginWithGoogle,
       logout,
     }
   }, [user, loading, initializing])

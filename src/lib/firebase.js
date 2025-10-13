@@ -47,13 +47,27 @@ if (typeof window !== 'undefined' && firebaseApp) {
   }
 }
 
-async function sendMessageToModel(message = 'Hello') {
+async function sendMessageToModel(message = 'Hello', imageData = null) {
   if (!geminiModel) {
     return 'AI yapılandırması eksik. .env.local dosyasına VITE_GEMINI_API_KEY ekle. https://aistudio.google.com/app/apikey adresinden API key alabilirsin.'
   }
 
   try {
-    const result = await geminiModel.generateContent(message)
+    let result
+    
+    if (imageData) {
+      const base64Data = imageData.split(',')[1]
+      const imagePart = {
+        inlineData: {
+          data: base64Data,
+          mimeType: 'image/jpeg'
+        }
+      }
+      result = await geminiModel.generateContent([message, imagePart])
+    } else {
+      result = await geminiModel.generateContent(message)
+    }
+    
     const response = result.response
     const text = response.text()
     console.log('Gemini modelinden cevap alındı:', text)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronRight, FileText, Folder, FolderPlus, Upload } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Folder, FolderPlus, Upload, Trash2 } from 'lucide-react'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
 
 function Sidebar() {
@@ -12,6 +12,7 @@ function Sidebar() {
     setActiveNoteId,
     openFolderForm,
     openNoteForm,
+    deleteFolder,
   } = useWorkspace()
   const [expandedFolders, setExpandedFolders] = useState(new Set())
   const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0, folderId: null })
@@ -193,6 +194,26 @@ function Sidebar() {
           >
             <span>Yeni not</span>
             <FileText className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!window.confirm('Bu klasörü ve içindeki tüm notları silmek istediğinden emin misin? Bu işlem geri alınamaz.')) {
+                closeContextMenu()
+                return
+              }
+              try {
+                await deleteFolder({ folderId: contextMenu.folderId })
+                closeContextMenu()
+              } catch (error) {
+                console.error('Klasör silinemedi', error)
+                alert('Klasör silinirken bir hata oluştu.')
+              }
+            }}
+            className="mt-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-rose-300 transition hover:bg-rose-500/10"
+          >
+            <span>Klasörü sil</span>
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       )}

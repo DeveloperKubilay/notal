@@ -207,6 +207,8 @@ export function WorkspaceProvider({ children }) {
         updatePlan: async () => {},
         deletePlan: async () => {},
         updateNote: async () => {},
+        deleteNote: async () => {},
+        deleteFolder: async () => {},
         setActiveFolderId: setActiveFolderIdState,
         setActiveNoteId: setActiveNoteIdState,
         setRevealAll,
@@ -376,6 +378,51 @@ export function WorkspaceProvider({ children }) {
       })
     }
 
+    const deleteNote = async ({ noteId }) => {
+      if (!noteId) throw new Error('Note id is required')
+      const noteRef = doc(db, 'users', user.uid, 'notes', noteId)
+      const note = notes.find(n => n.id === noteId)
+      
+      if (note?.attachments && note.attachments.length > 0 && firebaseStorage) {
+        for (const attachment of note.attachments) {
+          try {
+            const storageRef = ref(firebaseStorage, `users/${user.uid}/notes/${noteId}/${attachment.name}`)
+            await deleteObject(storageRef)
+          } catch (error) {
+            console.error(`${attachment.name} silinemedi`, error)
+          }
+        }
+      }
+      
+      await deleteDoc(noteRef)
+      
+      if (activeNoteId === noteId) {
+        setActiveNoteIdState(null)
+      }
+    }
+
+    const deleteFolder = async ({ folderId }) => {
+      if (!folderId) throw new Error('Folder id is required')
+      
+      const descendantIds = collectDescendantIds(folders, folderId)
+      descendantIds.add(folderId)
+      
+      const notesToDelete = notes.filter(note => descendantIds.has(note.folderId))
+      
+      for (const note of notesToDelete) {
+        await deleteNote({ noteId: note.id })
+      }
+      
+      for (const id of descendantIds) {
+        const folderRef = doc(db, 'users', user.uid, 'folders', id)
+        await deleteDoc(folderRef)
+      }
+      
+      if (descendantIds.has(activeFolderId)) {
+        setActiveFolderIdState(null)
+      }
+    }
+
     return {
       createFolder,
       createNote,
@@ -383,6 +430,8 @@ export function WorkspaceProvider({ children }) {
       updatePlan,
       deletePlan,
       updateNote,
+      deleteNote,
+      deleteFolder,
       setActiveFolderId: selectFolder,
       setActiveNoteId: selectNote,
       setRevealAll,
@@ -391,7 +440,7 @@ export function WorkspaceProvider({ children }) {
       openNoteForm,
       closeRightPanel,
     }
-  }, [user, activeFolderId])
+  }, [user, activeFolderId, activeNoteId, folders, notes])
 
   const value = useMemo(
     () => ({

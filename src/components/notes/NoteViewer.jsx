@@ -15,6 +15,7 @@ function NoteViewer() {
     activeNote,
     revealAll,
     updateNote,
+    deleteNote,
     rightPanel,
     closeRightPanel,
     createFolder,
@@ -290,6 +291,23 @@ function NoteViewer() {
     setExistingAttachments(existingAttachments.filter((_, i) => i !== index))
   }
 
+  const handleDelete = async () => {
+    if (!window.confirm('Bu notu silmek istediğinden emin misin? Bu işlem geri alınamaz.')) {
+      return
+    }
+    
+    setSaving(true)
+    try {
+      await deleteNote({ noteId: activeNote.id })
+      closeRightPanel()
+    } catch (error) {
+      console.error('Not silinemedi', error)
+      alert('Not silinirken bir hata oluştu.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (editMode) {
     return (
       <MotionSection
@@ -408,14 +426,25 @@ function NoteViewer() {
           </span>
           <h2 className="text-3xl font-semibold leading-tight text-white">{activeNote.question}</h2>
         </div>
-        <button
-          type="button"
-          onClick={() => setEditMode(true)}
-          className="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-indigo-400 hover:text-indigo-300 flex items-center gap-2"
-        >
-          <Pencil className="h-4 w-4" />
-          Düzenle
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setEditMode(true)}
+            className="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-indigo-400 hover:text-indigo-300 flex items-center gap-2"
+          >
+            <Pencil className="h-4 w-4" />
+            Düzenle
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={saving}
+            className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Sil
+          </button>
+        </div>
       </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -452,13 +481,15 @@ function NoteViewer() {
                     className="group relative block overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 transition hover:border-indigo-400"
                   >
                     {isImage ? (
-                      <img
-                        src={attachment.url}
-                        alt={attachment.name}
-                        className="w-full object-contain max-h-96"
-                      />
+                      <div className={`relative ${showAnswer ? '' : 'blur-sm'}`}>
+                        <img
+                          src={attachment.url}
+                          alt={attachment.name}
+                          className="w-full object-contain max-h-96"
+                        />
+                      </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center gap-3 p-8">
+                      <div className={`flex flex-col items-center justify-center gap-3 p-8 ${showAnswer ? '' : 'blur-sm'}`}>
                         <FileText className="h-16 w-16 text-slate-400" />
                         <span className="text-center text-sm text-slate-300">{attachment.name}</span>
                       </div>
