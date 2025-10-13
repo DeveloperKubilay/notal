@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app'
 import { getAnalytics, isSupported } from 'firebase/analytics'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai'
 
 const firebaseConfig = {
@@ -22,6 +23,7 @@ const firebaseApp = requiredKeys.every((key) => Boolean(firebaseConfig[key]))
 
 const firebaseAuth = firebaseApp ? getAuth(firebaseApp) : null
 const firestore = firebaseApp ? getFirestore(firebaseApp) : null
+const firebaseStorage = firebaseApp ? getStorage(firebaseApp) : null
 
 let firebaseAnalytics = null
 let firebaseAI = null
@@ -58,4 +60,4 @@ async function sendMessageToModel(message = 'Hello') {
   }
 }
 
-export { firebaseAI, firebaseAnalytics, firebaseApp, firebaseAuth, firestore, sendMessageToModel }
+export { firebaseAI, firebaseAnalytics, firebaseApp, firebaseAuth, firebaseStorage, firestore, sendMessageToModel }
