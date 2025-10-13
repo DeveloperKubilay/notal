@@ -12,7 +12,6 @@ function TryYourselfModal() {
   const [selectedFolderId, setSelectedFolderId] = useState('')
   const [currentNoteId, setCurrentNoteId] = useState('')
   const [askedNoteIds, setAskedNoteIds] = useState([])
-  const [questionHistory, setQuestionHistory] = useState([])
   const [userAnswer, setUserAnswer] = useState('')
   const [checking, setChecking] = useState(false)
   const [feedback, setFeedback] = useState(null)
@@ -22,7 +21,6 @@ function TryYourselfModal() {
     setSelectedFolderId(folders[0]?.id || '')
     setCurrentNoteId('')
     setAskedNoteIds([])
-    setQuestionHistory([])
     setUserAnswer('')
     setFeedback(null)
   }, [tryYourselfOpen, folders])
@@ -37,20 +35,17 @@ function TryYourselfModal() {
       return
     }
     
-    const unaskedNotes = availableNotes.filter((note) => !askedNoteIds.includes(note.id))
+    const unaskedNotes = availableNotes.filter((note) => !askedNoteIds.includes(note.id) && note.id !== currentNoteId)
     
-    let nextNote
     if (unaskedNotes.length === 0) {
-      setAskedNoteIds([])
-      nextNote = availableNotes[Math.floor(Math.random() * availableNotes.length)]
-      setAskedNoteIds([nextNote.id])
-    } else {
-      nextNote = unaskedNotes[Math.floor(Math.random() * unaskedNotes.length)]
-      setAskedNoteIds((prev) => [...prev, nextNote.id])
+      handleClose()
+      return
     }
     
-    if (currentNoteId) {
-      setQuestionHistory((prev) => [...prev, currentNoteId])
+    const nextNote = unaskedNotes[Math.floor(Math.random() * unaskedNotes.length)]
+    
+    if (currentNoteId && !askedNoteIds.includes(currentNoteId)) {
+      setAskedNoteIds((prev) => [...prev, currentNoteId])
     }
     
     setCurrentNoteId(nextNote.id)
@@ -66,16 +61,7 @@ function TryYourselfModal() {
   }
 
   const goBackToPreviousQuestion = () => {
-    if (questionHistory.length === 0) {
-      setCurrentNoteId('')
-      setUserAnswer('')
-      setFeedback(null)
-      return
-    }
-    
-    const previousNoteId = questionHistory[questionHistory.length - 1]
-    setQuestionHistory((prev) => prev.slice(0, -1))
-    setCurrentNoteId(previousNoteId)
+    setCurrentNoteId('')
     setUserAnswer('')
     setFeedback(null)
   }
@@ -130,19 +116,19 @@ Kullanıcının verdiği cevap doğru mu? Sadece "TRUE" veya "FALSE" yaz, başka
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur px-3 md:px-0"
       onClick={handleClose}
     >
       <MotionPanel
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-950 p-8 text-slate-100 shadow-2xl"
+        className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-100 shadow-2xl md:rounded-3xl md:p-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h3 className="text-xl font-semibold text-white">Kendini Dene</h3>
-            <p className="text-sm text-slate-400">Klasör seç, sorulara hızlıca yanıt ver.</p>
+            <h3 className="text-lg font-semibold text-white md:text-xl">Kendini Dene</h3>
+            <p className="text-xs text-slate-400 md:text-sm">Klasör seç, sorulara hızlıca yanıt ver.</p>
           </div>
           <button
             type="button"
@@ -161,7 +147,6 @@ Kullanıcının verdiği cevap doğru mu? Sadece "TRUE" veya "FALSE" yaz, başka
                 setSelectedFolderId(event.target.value)
                 setCurrentNoteId('')
                 setAskedNoteIds([])
-                setQuestionHistory([])
                 setFeedback(null)
               }}
               className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-indigo-400 focus:outline-none"
@@ -239,7 +224,7 @@ Kullanıcının verdiği cevap doğru mu? Sadece "TRUE" veya "FALSE" yaz, başka
                   onClick={goBackToPreviousQuestion}
                   className="ml-auto text-xs text-slate-500 underline-offset-2 hover:underline"
                 >
-                  Önceki soruya dön
+                  Soruyu geç
                 </button>
               </div>
             </>

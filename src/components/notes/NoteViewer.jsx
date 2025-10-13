@@ -113,11 +113,11 @@ function NoteViewer() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex h-full w-full flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 text-slate-100 shadow-2xl"
+        className="flex h-full w-full flex-1 flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-slate-100 shadow-2xl md:gap-6 md:rounded-3xl md:p-10"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <span className="text-lg font-semibold text-slate-50">Yeni Klasör</span>
+            <span className="text-base font-semibold text-slate-50 md:text-lg">Yeni Klasör</span>
             <span className="text-xs text-slate-500">Klasörünü içerik alanında oluştur</span>
           </div>
           <button
@@ -173,11 +173,11 @@ function NoteViewer() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex h-full w-full flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 text-slate-100 shadow-2xl"
+        className="flex h-full w-full flex-1 flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-slate-100 shadow-2xl md:gap-6 md:rounded-3xl md:p-10"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <span className="text-lg font-semibold text-slate-50">Yeni Not</span>
+            <span className="text-base font-semibold text-slate-50 md:text-lg">Yeni Not</span>
             <span className="text-xs text-slate-500">Sorunu ve cevabını buradan ekle</span>
           </div>
           <button
@@ -248,9 +248,9 @@ function NoteViewer() {
 
   if (!activeNote) {
     return (
-  <div className="flex h-full min-h-full w-full flex-1 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-slate-800 bg-slate-950/40 px-6 text-center text-slate-500">
-        <ShieldQuestion className="h-10 w-10 text-slate-600" />
-        <p className="text-sm">Soldan bir soru seç veya yeni bir not oluştur.</p>
+  <div className="flex h-full min-h-full w-full flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 px-4 text-center text-slate-500 md:rounded-3xl md:px-6">
+        <ShieldQuestion className="h-8 w-8 text-slate-600 md:h-10 md:w-10" />
+        <p className="text-xs md:text-sm">Soldan bir soru seç veya yeni bir not oluştur.</p>
       </div>
     )
   }
@@ -314,11 +314,11 @@ function NoteViewer() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex h-full w-full flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 text-slate-100 shadow-2xl"
+        className="flex h-full w-full flex-1 flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-slate-100 shadow-2xl md:gap-6 md:rounded-3xl md:p-10"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <span className="text-lg font-semibold text-slate-50">Not Düzenle</span>
+            <span className="text-base font-semibold text-slate-50 md:text-lg">Not Düzenle</span>
             <span className="text-xs text-slate-500">Soru, cevap ve ekleri güncelle</span>
           </div>
           <button
@@ -416,33 +416,33 @@ function NoteViewer() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-  className="flex h-full w-full flex-1 flex-col gap-8 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 text-slate-100 shadow-2xl overflow-y-auto"
+  className="flex h-full w-full flex-1 flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-slate-100 shadow-2xl overflow-y-auto md:gap-8 md:rounded-3xl md:p-10"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 space-y-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex-1 space-y-2 md:space-y-3">
           <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-200">
-            <Sparkles className="h-4 w-4" />
+            <Sparkles className="h-3 w-3 md:h-4 md:w-4" />
             Soru
           </span>
-          <h2 className="text-3xl font-semibold leading-tight text-white">{activeNote.question}</h2>
+          <h2 className="text-xl font-semibold leading-tight text-white md:text-3xl">{activeNote.question}</h2>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setEditMode(true)}
-            className="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-indigo-400 hover:text-indigo-300 flex items-center gap-2"
+            className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-indigo-400 hover:text-indigo-300 flex items-center gap-2 md:px-4"
           >
             <Pencil className="h-4 w-4" />
-            Düzenle
+            <span className="hidden sm:inline">Düzenle</span>
           </button>
           <button
             type="button"
             onClick={handleDelete}
             disabled={saving}
-            className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
+            className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2 md:px-4"
           >
             <Trash2 className="h-4 w-4" />
-            Sil
+            <span className="hidden sm:inline">Sil</span>
           </button>
         </div>
       </div>
@@ -459,7 +459,7 @@ function NoteViewer() {
           </button>
         </div>
         <div
-          className={`min-h-[180px] rounded-2xl border border-slate-800 bg-slate-900/80 p-6 text-lg leading-relaxed tracking-wide ${
+          className={`min-h-[120px] rounded-2xl border border-slate-800 bg-slate-900/80 p-4 text-base leading-relaxed tracking-wide md:min-h-[180px] md:p-6 md:text-lg ${
             showAnswer ? 'text-slate-100' : 'blur-sm text-slate-600'
           }`}
         >
@@ -485,13 +485,13 @@ function NoteViewer() {
                         <img
                           src={attachment.url}
                           alt={attachment.name}
-                          className="w-full object-contain max-h-96"
+                          className="w-full object-contain max-h-64 md:max-h-96"
                         />
                       </div>
                     ) : (
-                      <div className={`flex flex-col items-center justify-center gap-3 p-8 ${showAnswer ? '' : 'blur-sm'}`}>
-                        <FileText className="h-16 w-16 text-slate-400" />
-                        <span className="text-center text-sm text-slate-300">{attachment.name}</span>
+                      <div className={`flex flex-col items-center justify-center gap-3 p-6 md:p-8 ${showAnswer ? '' : 'blur-sm'}`}>
+                        <FileText className="h-12 w-12 text-slate-400 md:h-16 md:w-16" />
+                        <span className="text-center text-xs text-slate-300 md:text-sm">{attachment.name}</span>
                       </div>
                     )}
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-3">

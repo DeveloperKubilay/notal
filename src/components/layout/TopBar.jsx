@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarClock, LogOut, Wand2, Eye, EyeOff, Plus, X, Sparkles } from 'lucide-react'
+import { CalendarClock, LogOut, Wand2, Eye, EyeOff, Plus, X, Sparkles, Menu } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
 import { getCountdownLabel } from '../../utils/time.js'
@@ -12,7 +12,7 @@ const revealVariants = {
 
 const MotionButton = motion.button
 
-function TopBar() {
+function TopBar({ sidebarOpen, setSidebarOpen }) {
   const { user, logout } = useAuth()
   const {
     plans,
@@ -86,14 +86,24 @@ function TopBar() {
   }
 
   return (
-    <header className="flex flex-col gap-4 border-b border-slate-800 bg-slate-950/80 px-6 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
+    <header className="flex flex-col gap-4 border-b border-slate-800 bg-slate-950/80 px-3 py-3 backdrop-blur md:flex-row md:items-center md:justify-between md:px-6 md:py-4">
+      <div className="flex items-center gap-3 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="flex items-center justify-center rounded-xl border border-slate-800 p-2 text-slate-300 transition hover:border-indigo-400 hover:text-indigo-200"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <h1 className="text-lg font-bold text-indigo-400">📚 Notal</h1>
+      </div>
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 px-3 py-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300">
-              <CalendarClock className="h-5 w-5" />
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/70 px-3 py-2 md:w-auto md:gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 md:h-9 md:w-9">
+              <CalendarClock className="h-4 w-4 md:h-5 md:w-5" />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-1 flex-wrap items-center gap-2 overflow-x-auto">
               {planSummaries.map((plan) => (
                 <div
                   key={plan.id}
@@ -110,7 +120,7 @@ function TopBar() {
                   title={plan.targetDate ? new Date(plan.targetDate).toLocaleDateString('tr-TR') : 'Tarih yok'}
                 >
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-200">{plan.countdown}</span>
-                  <span className="text-sm font-semibold leading-none text-slate-100">{plan.title || 'İsimsiz plan'}</span>
+                  <span className="text-xs font-semibold leading-none text-slate-100">{plan.title || 'İsimsiz plan'}</span>
                   <button
                     type="button"
                     onClick={(event) => handlePlanRemove(event, plan.id)}
@@ -135,9 +145,9 @@ function TopBar() {
           <button
             type="button"
             onClick={() => window.open('/chat', '_blank')}
-            className="flex items-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/30"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-3 py-2 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-500/30 md:w-auto md:px-4 md:text-sm"
           >
-            <Sparkles className="h-5 w-5" />
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
             AI Chat
           </button>
         </div>
@@ -189,35 +199,35 @@ function TopBar() {
           </form>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3">
         <MotionButton
           type="button"
           onClick={() => setRevealAll((prev) => !prev)}
-          className="flex items-center gap-2 rounded-2xl border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400"
+          className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-800 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-indigo-400 md:flex-initial md:px-5 md:py-2.5 md:text-sm"
           variants={revealVariants}
           animate={revealAll ? 'active' : 'inactive'}
         >
-          {revealAll ? <Eye className="h-5 w-5 text-indigo-300" /> : <EyeOff className="h-5 w-5 text-slate-400" />}
-          {revealAll ? 'Sansürsüz' : 'Sansürlü'}
+          {revealAll ? <Eye className="h-4 w-4 text-indigo-300 md:h-5 md:w-5" /> : <EyeOff className="h-4 w-4 text-slate-400 md:h-5 md:w-5" />}
+          <span className="hidden md:inline">{revealAll ? 'Sansürsüz' : 'Sansürlü'}</span>
         </MotionButton>
         <button
           type="button"
           onClick={() => setTryYourselfOpen(true)}
-          className="flex items-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-5 py-2.5 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/30"
+          className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-3 py-2 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-500/30 md:flex-initial md:px-5 md:py-2.5 md:text-sm"
         >
-          <Wand2 className="h-5 w-5" />
-          Kendini Dene
+          <Wand2 className="h-4 w-4 md:h-5 md:w-5" />
+          <span className="hidden md:inline">Kendini Dene</span>
         </button>
-        <div className="hidden items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-xs text-slate-400 sm:flex">
-          <span>{user?.email}</span>
+        <div className="hidden items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs text-slate-400 xl:flex">
+          <span className="max-w-[150px] truncate">{user?.email}</span>
         </div>
         <button
           type="button"
           onClick={logout}
-          className="flex items-center gap-2 rounded-2xl border border-slate-800 px-5 py-2.5 text-sm font-semibold text-rose-300 transition hover:border-rose-400 hover:text-rose-200"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-slate-800 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:border-rose-400 hover:text-rose-200 md:px-5 md:py-2.5 md:text-sm"
         >
-          <LogOut className="h-5 w-5" />
-          Çıkış
+          <LogOut className="h-4 w-4 md:h-5 md:w-5" />
+          <span className="hidden md:inline">Çıkış</span>
         </button>
       </div>
     </header>

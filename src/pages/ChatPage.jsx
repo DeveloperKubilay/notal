@@ -85,20 +85,20 @@ function ChatPage() {
 
   return (
     <div className="flex h-screen flex-col bg-slate-950">
-      <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900/80 px-6 py-4 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20">
-            <Sparkles className="h-6 w-6 text-indigo-300" />
+      <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900/80 px-3 py-3 backdrop-blur md:px-6 md:py-4">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/20 md:h-10 md:w-10">
+            <Sparkles className="h-5 w-5 text-indigo-300 md:h-6 md:w-6" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-100">AI Chat</h1>
+            <h1 className="text-base font-semibold text-slate-100 md:text-lg">AI Chat</h1>
             <p className="text-xs text-slate-400">Gemini Flash ile sohbet et</p>
           </div>
         </div>
         <button
           type="button"
           onClick={() => window.close()}
-          className="flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-rose-500 hover:text-rose-300"
+          className="flex items-center gap-2 rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-rose-500 hover:text-rose-300 md:px-4 md:text-sm"
         >
           <X className="h-5 w-5" />
           Kapat
@@ -118,14 +118,14 @@ function ChatPage() {
           </div>
         )}
 
-        <div className="mx-auto max-w-3xl space-y-4">
+        <div className="mx-auto max-w-3xl space-y-4 px-3 md:px-0">
           {messages.map((message, index) => (
             <div
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-5 py-3 ${
+                className={`max-w-[85%] rounded-2xl px-4 py-3 md:max-w-[80%] md:px-5 ${
                   message.role === 'user'
                     ? 'bg-indigo-500/20 text-slate-100'
                     : 'border border-slate-800 bg-slate-900/80 text-slate-200'
@@ -135,7 +135,7 @@ function ChatPage() {
                   <img
                     src={message.image}
                     alt="Uploaded"
-                    className="mb-2 max-h-64 rounded-lg object-contain"
+                    className="mb-2 max-h-48 rounded-lg object-contain md:max-h-64"
                   />
                 )}
                 {message.content && (
@@ -168,8 +168,8 @@ function ChatPage() {
           ))}
 
           {loading && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-2xl border border-slate-800 bg-slate-900/80 px-5 py-3">
+            <div className="flex justify-start px-3 md:px-0">
+              <div className="max-w-[85%] rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 md:max-w-[80%] md:px-5">
                 <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
               </div>
             </div>
@@ -178,11 +178,11 @@ function ChatPage() {
         </div>
       </div>
 
-      <div className="border-t border-slate-800 bg-slate-900/80 px-6 py-4 backdrop-blur">
+      <div className="border-t border-slate-800 bg-slate-900/80 px-3 py-3 backdrop-blur md:px-6 md:py-4">
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
           {imagePreview && (
-            <div className="mb-3 flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 p-3">
-              <img src={imagePreview} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />
+            <div className="mb-3 flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 p-2 md:p-3">
+              <img src={imagePreview} alt="Preview" className="h-12 w-12 rounded-lg object-cover md:h-16 md:w-16" />
               <button
                 type="button"
                 onClick={removeImage}
@@ -192,7 +192,7 @@ function ChatPage() {
               </button>
             </div>
           )}
-          <div className="flex gap-3">
+          <div className="flex gap-2 md:gap-3">
             <input
               ref={fileInputRef}
               type="file"
@@ -204,7 +204,7 @@ function ChatPage() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
-              className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300 transition hover:border-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm text-slate-300 transition hover:border-indigo-400 disabled:cursor-not-allowed disabled:opacity-50 md:px-4"
             >
               <ImageIcon className="h-5 w-5" />
             </button>
@@ -214,15 +214,15 @@ function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Mesajını yaz..."
               disabled={loading}
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:px-4"
             />
             <button
               type="submit"
               disabled={loading || (!input.trim() && !selectedImage)}
-              className="flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-slate-700"
+              className="flex items-center justify-center gap-2 rounded-xl bg-indigo-500 p-3 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-slate-700 md:px-5"
             >
               <Send className="h-5 w-5" />
-              Gönder
+              <span className="hidden md:inline">Gönder</span>
             </button>
           </div>
         </form>

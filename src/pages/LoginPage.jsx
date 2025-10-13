@@ -23,15 +23,15 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-black px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-black px-4 py-12 md:px-6">
       <MotionDiv
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md space-y-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 shadow-2xl"
+        className="w-full max-w-md space-y-6 rounded-2xl border border-slate-800 bg-slate-950/80 p-6 shadow-2xl md:rounded-3xl md:p-10"
       >
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-semibold text-white">Notal</h1>
-          <p className="text-sm text-slate-400">Planını oluştur, notlarını yönet, kendini test et.</p>
+          <h1 className="text-2xl font-semibold text-white md:text-3xl">📚 Notal</h1>
+          <p className="text-xs text-slate-400 md:text-sm">Planını oluştur, notlarını yönet, kendini test et.</p>
         </div>
         <div className="space-y-4">
           {error && <p className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</p>}
