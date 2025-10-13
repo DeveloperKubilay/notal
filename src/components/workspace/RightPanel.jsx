@@ -24,7 +24,7 @@ function RightPanel() {
   const [parentId, setParentId] = useState(null)
   const [noteQuestion, setNoteQuestion] = useState('')
   const [noteAnswer, setNoteAnswer] = useState('')
-  const [noteFile, setNoteFile] = useState(null)
+  const [noteFiles, setNoteFiles] = useState([])
   const [saving, setSaving] = useState(false)
 
   const isFolderForm = rightPanel.type === 'folder-form'
@@ -38,7 +38,7 @@ function RightPanel() {
     } else if (isNoteForm) {
       setNoteQuestion('')
       setNoteAnswer('')
-      setNoteFile(null)
+      setNoteFiles([])
       setParentId(rightPanel.payload?.folderId ?? activeFolderId ?? null)
       setSaving(false)
     }
@@ -77,7 +77,7 @@ function RightPanel() {
         folderId: parentId,
         question: noteQuestion.trim(),
         answer: noteAnswer.trim(),
-        attachment: noteFile,
+        attachments: noteFiles,
       })
     } finally {
       setSaving(false)
@@ -177,14 +177,15 @@ function RightPanel() {
                 className="h-28 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none"
               />
               <label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-300 hover:border-indigo-400">
-                <span>{noteFile ? noteFile.name : 'Dosya ekle'}</span>
+                <span>{noteFiles.length > 0 ? `${noteFiles.length} dosya seçildi` : 'Dosya ekle'}</span>
                 <Upload className="h-4 w-4" />
                 <input
                   type="file"
+                  multiple
                   className="hidden"
                   onChange={(event) => {
-                    const file = event.target.files && event.target.files[0] ? event.target.files[0] : null
-                    setNoteFile(file)
+                    const files = event.target.files ? Array.from(event.target.files) : []
+                    setNoteFiles(files)
                   }}
                 />
               </label>

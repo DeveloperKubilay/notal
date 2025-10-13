@@ -92,7 +92,6 @@ export function WorkspaceProvider({ children }) {
   const [activeNoteId, setActiveNoteIdState] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tryYourselfOpen, setTryYourselfOpen] = useState(false)
-  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
   const [rightPanel, setRightPanel] = useState(defaultRightPanel)
   const folderRef = useRef(null)
   const initialLoadRef = useRef({ ...initialLoadState })
@@ -212,7 +211,6 @@ export function WorkspaceProvider({ children }) {
         setActiveNoteId: setActiveNoteIdState,
         setRevealAll,
         setTryYourselfOpen,
-        setAiDrawerOpen,
         openFolderForm: () => {},
         openNoteForm: () => {},
         closeRightPanel: () => {},
@@ -257,7 +255,7 @@ export function WorkspaceProvider({ children }) {
       return docRef
     }
 
-    const createNote = async ({ folderId, question, answer, attachment }) => {
+    const createNote = async ({ folderId, question, answer, attachments = [] }) => {
       if (!folderId) throw new Error('Folder is required')
       if (!question) throw new Error('Question is required')
       if (!answer) throw new Error('Answer is required')
@@ -273,27 +271,31 @@ export function WorkspaceProvider({ children }) {
       setActiveNoteIdState(docRef.id)
       setRightPanel({ ...defaultRightPanel })
 
-      if (attachment && firebaseStorage) {
-        try {
-          const storageRef = ref(firebaseStorage, `users/${user.uid}/notes/${docRef.id}/${attachment.name}`)
-          const snapshot = await uploadBytes(storageRef, attachment)
-          const url = await getDownloadURL(snapshot.ref)
-          const attachmentPayload = [
-            {
-              name: attachment.name,
+      if (attachments.length > 0 && firebaseStorage) {
+        const uploadedAttachments = []
+        for (const file of attachments) {
+          try {
+            const storageRef = ref(firebaseStorage, `users/${user.uid}/notes/${docRef.id}/${file.name}`)
+            const snapshot = await uploadBytes(storageRef, file)
+            const url = await getDownloadURL(snapshot.ref)
+            uploadedAttachments.push({
+              name: file.name,
               url,
-              contentType: attachment.type || null,
-              size: attachment.size || null,
+              contentType: file.type || null,
+              size: file.size || null,
               uploadedAt: new Date().toISOString(),
-            },
-          ]
+            })
+          } catch (error) {
+            console.error(`${file.name} yüklenemedi`, error)
+          }
+        }
+        
+        if (uploadedAttachments.length > 0) {
           const noteRef = doc(db, 'users', user.uid, 'notes', docRef.id)
           await updateDoc(noteRef, {
-            attachments: attachmentPayload,
+            attachments: uploadedAttachments,
             updatedAt: serverTimestamp(),
           })
-        } catch (error) {
-          console.error('Dosya yüklenemedi', error)
         }
       }
 
@@ -348,7 +350,6 @@ export function WorkspaceProvider({ children }) {
       setActiveNoteId: selectNote,
       setRevealAll,
       setTryYourselfOpen,
-      setAiDrawerOpen,
       openFolderForm,
       openNoteForm,
       closeRightPanel,
@@ -369,7 +370,6 @@ export function WorkspaceProvider({ children }) {
       activeNote,
       selectedFolder,
       tryYourselfOpen,
-      aiDrawerOpen,
       rightPanel,
       ...actions,
     }),
@@ -386,7 +386,6 @@ export function WorkspaceProvider({ children }) {
       activeNote,
       selectedFolder,
       tryYourselfOpen,
-      aiDrawerOpen,
       rightPanel,
       actions,
     ],

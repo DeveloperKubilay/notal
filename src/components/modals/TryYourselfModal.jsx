@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Loader, Shuffle, Sparkles } from 'lucide-react'
+import { Loader, Shuffle, Sparkles, ClipboardPaste } from 'lucide-react'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
+import { sendMessageToModel } from '../../lib/firebase.js'
 
 const MotionOverlay = motion.div
 const MotionPanel = motion.div
@@ -10,6 +11,8 @@ function TryYourselfModal() {
   const { tryYourselfOpen, setTryYourselfOpen, folders, notes } = useWorkspace()
   const [selectedFolderId, setSelectedFolderId] = useState('')
   const [currentNoteId, setCurrentNoteId] = useState('')
+  const [askedNoteIds, setAskedNoteIds] = useState([])
+  const [questionHistory, setQuestionHistory] = useState([])
   const [userAnswer, setUserAnswer] = useState('')
   const [checking, setChecking] = useState(false)
   const [feedback, setFeedback] = useState(null)
@@ -18,6 +21,8 @@ function TryYourselfModal() {
     if (!tryYourselfOpen) return
     setSelectedFolderId(folders[0]?.id || '')
     setCurrentNoteId('')
+    setAskedNoteIds([])
+    setQuestionHistory([])
     setUserAnswer('')
     setFeedback(null)
   }, [tryYourselfOpen, folders])
@@ -31,8 +36,46 @@ function TryYourselfModal() {
       setCurrentNoteId('')
       return
     }
-    const nextNote = availableNotes[Math.floor(Math.random() * availableNotes.length)]
+    
+    const unaskedNotes = availableNotes.filter((note) => !askedNoteIds.includes(note.id))
+    
+    let nextNote
+    if (unaskedNotes.length === 0) {
+      setAskedNoteIds([])
+      nextNote = availableNotes[Math.floor(Math.random() * availableNotes.length)]
+      setAskedNoteIds([nextNote.id])
+    } else {
+      nextNote = unaskedNotes[Math.floor(Math.random() * unaskedNotes.length)]
+      setAskedNoteIds((prev) => [...prev, nextNote.id])
+    }
+    
+    if (currentNoteId) {
+      setQuestionHistory((prev) => [...prev, currentNoteId])
+    }
+    
     setCurrentNoteId(nextNote.id)
+    setUserAnswer('')
+    setFeedback(null)
+  }
+
+  const pasteAnswer = () => {
+    if (currentNote) {
+      setUserAnswer(currentNote.answer)
+      setFeedback(null)
+    }
+  }
+
+  const goBackToPreviousQuestion = () => {
+    if (questionHistory.length === 0) {
+      setCurrentNoteId('')
+      setUserAnswer('')
+      setFeedback(null)
+      return
+    }
+    
+    const previousNoteId = questionHistory[questionHistory.length - 1]
+    setQuestionHistory((prev) => prev.slice(0, -1))
+    setCurrentNoteId(previousNoteId)
     setUserAnswer('')
     setFeedback(null)
   }
@@ -40,17 +83,42 @@ function TryYourselfModal() {
   const checkAnswer = async () => {
     if (!currentNote) return
     setChecking(true)
-    const sanitizedUser = normalizeText(userAnswer)
-    const sanitizedAnswer = normalizeText(currentNote.answer)
-    const success = sanitizedUser.length > 0 && sanitizedAnswer.includes(sanitizedUser)
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    setFeedback(success ? 'Doğru' : 'Tekrar dene')
-    setChecking(false)
+    
+    try {
+      const prompt = `Soru: "${currentNote.question}"
+Doğru Cevap: "${currentNote.answer}"
+Kullanıcının Cevabı: "${userAnswer}"
+
+Kullanıcının verdiği cevap doğru mu? Sadece "TRUE" veya "FALSE" yaz, başka bir şey yazma.`
+      
+      const response = await sendMessageToModel(prompt)
+      const isCorrect = response.trim().toUpperCase().includes('TRUE')
+      
+      setFeedback(isCorrect ? 'Doğru' : 'Yanlış')
+      
+      if (isCorrect) {
+        setTimeout(() => {
+          const unaskedNotes = availableNotes.filter((note) => !askedNoteIds.includes(note.id) && note.id !== currentNoteId)
+          
+          if (unaskedNotes.length === 0 && askedNoteIds.length >= availableNotes.length - 1) {
+            handleClose()
+          } else {
+            pickRandomNote()
+          }
+        }, 1000)
+      }
+    } catch (error) {
+      console.error('AI cevap kontrolü başarısız', error)
+      setFeedback('Kontrol edilemedi')
+    } finally {
+      setChecking(false)
+    }
   }
 
   const handleClose = () => {
     setTryYourselfOpen(false)
     setCurrentNoteId('')
+    setAskedNoteIds([])
     setFeedback(null)
     setUserAnswer('')
   }
@@ -63,11 +131,13 @@ function TryYourselfModal() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur"
+      onClick={handleClose}
     >
       <MotionPanel
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-950 p-8 text-slate-100 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
           <div>
@@ -90,12 +160,14 @@ function TryYourselfModal() {
               onChange={(event) => {
                 setSelectedFolderId(event.target.value)
                 setCurrentNoteId('')
+                setAskedNoteIds([])
+                setQuestionHistory([])
                 setFeedback(null)
               }}
               className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-indigo-400 focus:outline-none"
             >
               {folderOptions.map((option) => (
-                <option key={option.value} value={option.value} className="text-slate-900">
+                <option key={option.value} value={option.value} className="bg-slate-900 text-white">
                   {option.label}
                 </option>
               ))}
@@ -124,35 +196,48 @@ function TryYourselfModal() {
                 placeholder="Cevabını yaz"
                 className="h-24 w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none"
               />
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={checkAnswer}
                   disabled={checking || !userAnswer.trim()}
-                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
                 >
                   {checking ? <Loader className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   Cevabı Kontrol Et
                 </button>
-                {feedback && (
-                  <span className={`text-sm font-semibold ${feedback === 'Doğru' ? 'text-emerald-300' : 'text-rose-300'}`}>
-                    {feedback}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-500">
+                <button
+                  type="button"
+                  onClick={pasteAnswer}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20"
+                >
+                  <ClipboardPaste className="h-4 w-4" />
+                  Cevabı Yapıştır
+                </button>
                 <button
                   type="button"
                   onClick={pickRandomNote}
                   disabled={availableNotes.length === 0}
-                  className="underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-slate-600"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/50 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
                 >
-                  Yeni soru getir
+                  <Shuffle className="h-4 w-4" />
+                  Yeni Soru Getir
                 </button>
+              </div>
+              <div className="flex items-center justify-between">
+                {feedback && (
+                  <span className={`text-sm font-semibold ${
+                    feedback === 'Doğru' ? 'text-emerald-400' : 
+                    feedback === 'Yanlış' ? 'text-rose-400' : 
+                    'text-amber-400'
+                  }`}>
+                    {feedback}
+                  </span>
+                )}
                 <button
                   type="button"
-                  onClick={() => setCurrentNoteId('')}
-                  className="underline-offset-2 hover:underline"
+                  onClick={goBackToPreviousQuestion}
+                  className="ml-auto text-xs text-slate-500 underline-offset-2 hover:underline"
                 >
                   Önceki soruya dön
                 </button>
@@ -167,10 +252,6 @@ function TryYourselfModal() {
       </MotionPanel>
     </MotionOverlay>
   )
-}
-
-function normalizeText(value) {
-  return value.toLowerCase().replace(/[^a-z0-9ğüşöçıİ]+/gi, ' ').trim()
 }
 
 export default TryYourselfModal

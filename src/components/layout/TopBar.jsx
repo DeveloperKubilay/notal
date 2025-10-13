@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarClock, LogOut, Sparkles, Wand2, Eye, EyeOff, Plus, X } from 'lucide-react'
+import { CalendarClock, LogOut, Wand2, Eye, EyeOff, Plus, X } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
 import { getCountdownLabel } from '../../utils/time.js'
@@ -22,7 +22,6 @@ function TopBar() {
     revealAll,
     setRevealAll,
     setTryYourselfOpen,
-    setAiDrawerOpen,
   } = useWorkspace()
   const [planFormOpen, setPlanFormOpen] = useState(false)
   const [editingPlanId, setEditingPlanId] = useState(null)
@@ -92,7 +91,7 @@ function TopBar() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 px-3 py-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300">
-              <CalendarClock className="h-4 w-4" />
+              <CalendarClock className="h-5 w-5" />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {planSummaries.map((plan) => (
@@ -110,8 +109,8 @@ function TopBar() {
                   className="group relative flex min-w-[8.5rem] flex-col gap-1 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-3 py-1.5 transition hover:border-indigo-300 hover:bg-indigo-500/20 focus:outline-none"
                   title={plan.targetDate ? new Date(plan.targetDate).toLocaleDateString('tr-TR') : 'Tarih yok'}
                 >
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-indigo-200">{plan.countdown}</span>
-                  <span className="text-base font-semibold leading-none text-slate-100">{plan.title || 'İsimsiz plan'}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-200">{plan.countdown}</span>
+                  <span className="text-sm font-semibold leading-none text-slate-100">{plan.title || 'İsimsiz plan'}</span>
                   <button
                     type="button"
                     onClick={(event) => handlePlanRemove(event, plan.id)}
@@ -133,14 +132,6 @@ function TopBar() {
               </button>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setAiDrawerOpen(true)}
-            className="flex items-center gap-2 rounded-2xl border border-emerald-500/50 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20"
-          >
-            <Sparkles className="h-4 w-4" />
-            AI Asistan
-          </button>
         </div>
         {planFormOpen && (
           <form
@@ -194,19 +185,19 @@ function TopBar() {
         <MotionButton
           type="button"
           onClick={() => setRevealAll((prev) => !prev)}
-          className="flex items-center gap-2 rounded-2xl border border-slate-800 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-indigo-400"
+          className="flex items-center gap-2 rounded-2xl border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400"
           variants={revealVariants}
           animate={revealAll ? 'active' : 'inactive'}
         >
-          {revealAll ? <Eye className="h-4 w-4 text-indigo-300" /> : <EyeOff className="h-4 w-4 text-slate-400" />}
+          {revealAll ? <Eye className="h-5 w-5 text-indigo-300" /> : <EyeOff className="h-5 w-5 text-slate-400" />}
           {revealAll ? 'Sansürsüz' : 'Sansürlü'}
         </MotionButton>
         <button
           type="button"
           onClick={() => setTryYourselfOpen(true)}
-          className="flex items-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/30"
+          className="flex items-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-5 py-2.5 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/30"
         >
-          <Wand2 className="h-4 w-4" />
+          <Wand2 className="h-5 w-5" />
           Kendini Dene
         </button>
         <div className="hidden items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-xs text-slate-400 sm:flex">
@@ -215,9 +206,9 @@ function TopBar() {
         <button
           type="button"
           onClick={logout}
-          className="flex items-center gap-2 rounded-2xl border border-slate-800 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:border-rose-400 hover:text-rose-200"
+          className="flex items-center gap-2 rounded-2xl border border-slate-800 px-5 py-2.5 text-sm font-semibold text-rose-300 transition hover:border-rose-400 hover:text-rose-200"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-5 w-5" />
           Çıkış
         </button>
       </div>

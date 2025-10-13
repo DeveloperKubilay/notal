@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Loader2, Sparkles, ShieldQuestion, Upload } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Sparkles, ShieldQuestion, Upload, FileText, Image as ImageIcon } from 'lucide-react'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
 
 const MotionSection = motion.section
@@ -26,7 +26,7 @@ function NoteViewer() {
   const [folderParentId, setFolderParentId] = useState(null)
   const [noteQuestion, setNoteQuestion] = useState('')
   const [noteAnswer, setNoteAnswer] = useState('')
-  const [noteFile, setNoteFile] = useState(null)
+  const [noteFiles, setNoteFiles] = useState([])
   const [noteParentId, setNoteParentId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [optimisticHidden, setOptimisticHidden] = useState(null)
@@ -42,7 +42,7 @@ function NoteViewer() {
     } else if (isNoteForm) {
       setNoteQuestion('')
       setNoteAnswer('')
-      setNoteFile(null)
+      setNoteFiles([])
       setNoteParentId(rightPanel.payload?.folderId ?? activeFolderId ?? null)
       setSaving(false)
     }
@@ -81,7 +81,7 @@ function NoteViewer() {
         folderId: noteParentId,
         question: noteQuestion.trim(),
         answer: noteAnswer.trim(),
-        attachment: noteFile,
+        attachments: noteFiles,
       })
     } finally {
       setSaving(false)
@@ -194,14 +194,15 @@ function NoteViewer() {
             className="h-40 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none"
           />
           <label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300 hover:border-indigo-400">
-            <span>{noteFile ? noteFile.name : 'Dosya ekle'}</span>
+            <span>{noteFiles.length > 0 ? `${noteFiles.length} dosya seçildi` : 'Dosya ekle'}</span>
             <Upload className="h-4 w-4" />
             <input
               type="file"
+              multiple
               className="hidden"
               onChange={(event) => {
-                const file = event.target.files && event.target.files[0] ? event.target.files[0] : null
-                setNoteFile(file)
+                const files = event.target.files ? Array.from(event.target.files) : []
+                setNoteFiles(files)
               }}
             />
           </label>
@@ -283,6 +284,47 @@ function NoteViewer() {
         >
           {activeNote.answer}
         </div>
+        
+        {activeNote.attachments && activeNote.attachments.length > 0 && (
+          <div className="space-y-3">
+            <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">Ekler</span>
+            <div className="grid grid-cols-2 gap-3">
+              {activeNote.attachments.map((attachment, index) => {
+                const isImage = attachment.contentType?.startsWith('image/')
+                return (
+                  <a
+                    key={index}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 transition hover:border-indigo-400"
+                  >
+                    {isImage ? (
+                      <img
+                        src={attachment.url}
+                        alt={attachment.name}
+                        className="h-48 w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-48 flex-col items-center justify-center gap-3 p-4">
+                        <FileText className="h-12 w-12 text-slate-400" />
+                        <span className="text-center text-xs text-slate-300 line-clamp-2">{attachment.name}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-3">
+                      <p className="text-xs text-slate-300 truncate">{attachment.name}</p>
+                      {attachment.size && (
+                        <p className="text-[10px] text-slate-500">
+                          {(attachment.size / 1024).toFixed(1)} KB
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </MotionSection>
   )

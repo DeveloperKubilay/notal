@@ -3,7 +3,7 @@ import { getAnalytics, isSupported } from 'firebase/analytics'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
-import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -26,7 +26,7 @@ const firestore = firebaseApp ? getFirestore(firebaseApp) : null
 const firebaseStorage = firebaseApp ? getStorage(firebaseApp) : null
 
 let firebaseAnalytics = null
-let firebaseAI = null
+let genAI = null
 let geminiModel = null
 
 if (typeof window !== 'undefined' && firebaseApp) {
@@ -36,28 +36,32 @@ if (typeof window !== 'undefined' && firebaseApp) {
     })
     .catch(() => {})
 
-  try {
-    firebaseAI = getAI(firebaseApp, { backend: new GoogleAIBackend() })
-    geminiModel = getGenerativeModel(firebaseAI, { model: 'gemini-2.5-flash' })
-  } catch (error) {
-    console.error('Gemini modeli başlatılamadı', error)
-    firebaseAI = null
-    geminiModel = null
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY
+  if (geminiApiKey) {
+    try {
+      genAI = new GoogleGenerativeAI(geminiApiKey)
+      geminiModel = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+    } catch (error) {
+      console.error('Gemini modeli başlatılamadı', error)
+    }
   }
 }
 
 async function sendMessageToModel(message = 'Hello') {
-  if (!geminiModel) return 'AI yapılandırması eksik. Firebase projesinde Gemini erişimini kontrol et.'
+  if (!geminiModel) {
+    return 'AI yapılandırması eksik. .env.local dosyasına VITE_GEMINI_API_KEY ekle. https://aistudio.google.com/app/apikey adresinden API key alabilirsin.'
+  }
 
   try {
     const result = await geminiModel.generateContent(message)
-    const response = await result.response
+    const response = result.response
     const text = response.text()
+    console.log('Gemini modelinden cevap alındı:', text)
     return text
   } catch (error) {
     console.error('Gemini modeli hata verdi', error)
-    return 'Bir sorundan dolayı cevap veremiyorum. Mesaj fazla uzun olabilir.'
+    return 'Bir sorundan dolayı cevap veremiyorum. API key geçerli mi kontrol et.'
   }
 }
 
-export { firebaseAI, firebaseAnalytics, firebaseApp, firebaseAuth, firebaseStorage, firestore, sendMessageToModel }
+export { firebaseAnalytics, firebaseApp, firebaseAuth, firebaseStorage, firestore, sendMessageToModel }
