@@ -11,7 +11,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { firebaseStorage, firestore } from '../lib/firebase.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { WorkspaceContext } from './workspace-context.js'
@@ -206,7 +206,7 @@ export function WorkspaceProvider({ children }) {
         createPlan: async () => {},
         updatePlan: async () => {},
         deletePlan: async () => {},
-        updateNoteVisibility: async () => {},
+        updateNote: async () => {},
         setActiveFolderId: setActiveFolderIdState,
         setActiveNoteId: setActiveNoteIdState,
         setRevealAll,
@@ -264,7 +264,6 @@ export function WorkspaceProvider({ children }) {
         folderId,
         question,
         answer,
-        hidden: true,
         attachments: [],
         createdAt: serverTimestamp(),
       })
@@ -333,10 +332,48 @@ export function WorkspaceProvider({ children }) {
       await deleteDoc(planRef)
     }
 
-    const updateNoteVisibility = async ({ noteId, hidden }) => {
+    const updateNote = async ({ noteId, question, answer, newAttachments = [], existingAttachments = [], removedAttachments = [] }) => {
       if (!noteId) throw new Error('Note id is required')
       const noteRef = doc(db, 'users', user.uid, 'notes', noteId)
-      await updateDoc(noteRef, { hidden })
+      
+      if (removedAttachments.length > 0 && firebaseStorage) {
+        for (const attachment of removedAttachments) {
+          try {
+            const storageRef = ref(firebaseStorage, `users/${user.uid}/notes/${noteId}/${attachment.name}`)
+            await deleteObject(storageRef)
+          } catch (error) {
+            console.error(`${attachment.name} silinemedi`, error)
+          }
+        }
+      }
+      
+      let finalAttachments = [...existingAttachments]
+      
+      if (newAttachments.length > 0 && firebaseStorage) {
+        for (const file of newAttachments) {
+          try {
+            const storageRef = ref(firebaseStorage, `users/${user.uid}/notes/${noteId}/${file.name}`)
+            const snapshot = await uploadBytes(storageRef, file)
+            const url = await getDownloadURL(snapshot.ref)
+            finalAttachments.push({
+              name: file.name,
+              url,
+              contentType: file.type || null,
+              size: file.size || null,
+              uploadedAt: new Date().toISOString(),
+            })
+          } catch (error) {
+            console.error(`${file.name} yüklenemedi`, error)
+          }
+        }
+      }
+      
+      await updateDoc(noteRef, {
+        question,
+        answer,
+        attachments: finalAttachments,
+        updatedAt: serverTimestamp(),
+      })
     }
 
     return {
@@ -345,7 +382,7 @@ export function WorkspaceProvider({ children }) {
       createPlan,
       updatePlan,
       deletePlan,
-      updateNoteVisibility,
+      updateNote,
       setActiveFolderId: selectFolder,
       setActiveNoteId: selectNote,
       setRevealAll,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarClock, LogOut, Wand2, Eye, EyeOff, Plus, X } from 'lucide-react'
+import { CalendarClock, LogOut, Wand2, Eye, EyeOff, Plus, X, Sparkles } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
 import { getCountdownLabel } from '../../utils/time.js'
@@ -182,6 +182,14 @@ function TopBar() {
         )}
       </div>
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => window.open('/chat', '_blank')}
+          className="flex items-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-5 py-2.5 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/30"
+        >
+          <Sparkles className="h-5 w-5" />
+          AI Chat
+        </button>
         <MotionButton
           type="button"
           onClick={() => setRevealAll((prev) => !prev)}

@@ -5,6 +5,7 @@ import { WorkspaceProvider } from './contexts/WorkspaceProvider.jsx'
 import { useAuth } from './hooks/useAuth.js'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
+import ChatPage from './pages/ChatPage.jsx'
 
 function App() {
   return (
@@ -18,6 +19,10 @@ function App() {
                 <LoginPage />
               </GuestRoute>
             )}
+          />
+          <Route
+            path="/chat"
+            element={<ChatPage />}
           />
           <Route
             path="/*"

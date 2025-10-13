@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Loader2, Sparkles, ShieldQuestion, Upload, FileText, Image as ImageIcon } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Sparkles, ShieldQuestion, Upload, FileText, Image as ImageIcon, Pencil, Trash2 } from 'lucide-react'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
 
 const MotionSection = motion.section
@@ -14,7 +14,7 @@ function NoteViewer() {
   const {
     activeNote,
     revealAll,
-    updateNoteVisibility,
+    updateNote,
     rightPanel,
     closeRightPanel,
     createFolder,
@@ -29,7 +29,12 @@ function NoteViewer() {
   const [noteFiles, setNoteFiles] = useState([])
   const [noteParentId, setNoteParentId] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [optimisticHidden, setOptimisticHidden] = useState(null)
+  const [localHidden, setLocalHidden] = useState(true)
+  const [editMode, setEditMode] = useState(false)
+  const [editQuestion, setEditQuestion] = useState('')
+  const [editAnswer, setEditAnswer] = useState('')
+  const [editFiles, setEditFiles] = useState([])
+  const [existingAttachments, setExistingAttachments] = useState([])
 
   const isFolderForm = rightPanel.type === 'folder-form'
   const isNoteForm = rightPanel.type === 'note-form'
@@ -47,6 +52,19 @@ function NoteViewer() {
       setSaving(false)
     }
   }, [isFolderForm, isNoteForm, rightPanel, activeFolderId])
+
+  useEffect(() => {
+    if (activeNote && !editMode) {
+      setEditQuestion(activeNote.question || '')
+      setEditAnswer(activeNote.answer || '')
+      setExistingAttachments(activeNote.attachments || [])
+      setEditFiles([])
+    }
+  }, [activeNote, editMode])
+
+  useEffect(() => {
+    setLocalHidden(true)
+  }, [activeNote?.id])
 
   const folderOptions = useMemo(() => {
     const options = [{ id: null, label: 'Kök klasör' }]
@@ -236,19 +254,143 @@ function NoteViewer() {
     )
   }
 
-  const currentHidden = optimisticHidden ?? activeNote.hidden ?? true
-  const showAnswer = revealAll || currentHidden === false
+  const showAnswer = revealAll || !localHidden
 
-  const toggleHidden = async () => {
-    const nextHidden = !currentHidden
-    setOptimisticHidden(nextHidden)
+  const toggleHidden = () => {
+    setLocalHidden(!localHidden)
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    if (!editQuestion.trim() || !editAnswer.trim()) return
+    setSaving(true)
     try {
-      await updateNoteVisibility({ noteId: activeNote.id, hidden: nextHidden })
+      const originalAttachments = activeNote.attachments || []
+      const removedAttachments = originalAttachments.filter(
+        orig => !existingAttachments.some(existing => existing.url === orig.url)
+      )
+      
+      await updateNote({
+        noteId: activeNote.id,
+        question: editQuestion.trim(),
+        answer: editAnswer.trim(),
+        newAttachments: editFiles,
+        existingAttachments,
+        removedAttachments,
+      })
+      setEditMode(false)
     } catch (error) {
       console.error('Not güncellenemedi', error)
     } finally {
-      setOptimisticHidden(null)
+      setSaving(false)
     }
+  }
+
+  const removeExistingAttachment = (index) => {
+    setExistingAttachments(existingAttachments.filter((_, i) => i !== index))
+  }
+
+  if (editMode) {
+    return (
+      <MotionSection
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex h-full w-full flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 text-slate-100 shadow-2xl"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-slate-50">Not Düzenle</span>
+            <span className="text-xs text-slate-500">Soru, cevap ve ekleri güncelle</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditMode(false)}
+            className="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500"
+          >
+            İptal
+          </button>
+        </div>
+        <form onSubmit={handleEditSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto">
+          <textarea
+            value={editQuestion}
+            onChange={(e) => setEditQuestion(e.target.value)}
+            placeholder="Soru"
+            className="h-24 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none"
+          />
+          <textarea
+            value={editAnswer}
+            onChange={(e) => setEditAnswer(e.target.value)}
+            placeholder="Cevap"
+            className="h-40 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none"
+          />
+          
+          {existingAttachments.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Mevcut Ekler</span>
+              <div className="space-y-2">
+                {existingAttachments.map((attachment, index) => {
+                  const isImage = attachment.contentType?.startsWith('image/')
+                  return (
+                    <div key={index} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 p-3">
+                      {isImage ? (
+                        <img src={attachment.url} alt={attachment.name} className="h-12 w-12 rounded-lg object-cover" />
+                      ) : (
+                        <FileText className="h-8 w-8 text-slate-400" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-300 truncate">{attachment.name}</p>
+                        {attachment.size && (
+                          <p className="text-xs text-slate-500">{(attachment.size / 1024).toFixed(1)} KB</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeExistingAttachment(index)}
+                        className="rounded-lg border border-red-500/40 bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          
+          <label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300 hover:border-indigo-400">
+            <span>{editFiles.length > 0 ? `${editFiles.length} yeni dosya seçildi` : 'Yeni dosya ekle'}</span>
+            <Upload className="h-4 w-4" />
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = e.target.files ? Array.from(e.target.files) : []
+                setEditFiles(files)
+              }}
+            />
+          </label>
+          
+          <div className="mt-auto flex gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 rounded-xl bg-indigo-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-slate-700"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Güncelle'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="flex-1 rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500"
+            >
+              İptal
+            </button>
+          </div>
+        </form>
+      </MotionSection>
+    )
   }
 
   return (
@@ -256,14 +398,24 @@ function NoteViewer() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-  className="flex h-full w-full flex-1 flex-col gap-8 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 text-slate-100 shadow-2xl"
+  className="flex h-full w-full flex-1 flex-col gap-8 rounded-3xl border border-slate-800 bg-slate-950/80 p-10 text-slate-100 shadow-2xl overflow-y-auto"
     >
-      <div className="space-y-3">
-        <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-200">
-          <Sparkles className="h-4 w-4" />
-          Soru
-        </span>
-        <h2 className="text-3xl font-semibold leading-tight text-white">{activeNote.question}</h2>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-200">
+            <Sparkles className="h-4 w-4" />
+            Soru
+          </span>
+          <h2 className="text-3xl font-semibold leading-tight text-white">{activeNote.question}</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditMode(true)}
+          className="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-indigo-400 hover:text-indigo-300 flex items-center gap-2"
+        >
+          <Pencil className="h-4 w-4" />
+          Düzenle
+        </button>
       </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -274,7 +426,7 @@ function NoteViewer() {
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-indigo-400"
           >
             {showAnswer ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {showAnswer ? 'Sansürle' : 'Göster'}
+            {showAnswer ? 'Gizle' : 'Göster'}
           </button>
         </div>
         <div
@@ -288,7 +440,7 @@ function NoteViewer() {
         {activeNote.attachments && activeNote.attachments.length > 0 && (
           <div className="space-y-3">
             <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">Ekler</span>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4">
               {activeNote.attachments.map((attachment, index) => {
                 const isImage = attachment.contentType?.startsWith('image/')
                 return (
@@ -297,24 +449,24 @@ function NoteViewer() {
                     href={attachment.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 transition hover:border-indigo-400"
+                    className="group relative block overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 transition hover:border-indigo-400"
                   >
                     {isImage ? (
                       <img
                         src={attachment.url}
                         alt={attachment.name}
-                        className="h-48 w-full object-cover"
+                        className="w-full object-contain max-h-96"
                       />
                     ) : (
-                      <div className="flex h-48 flex-col items-center justify-center gap-3 p-4">
-                        <FileText className="h-12 w-12 text-slate-400" />
-                        <span className="text-center text-xs text-slate-300 line-clamp-2">{attachment.name}</span>
+                      <div className="flex flex-col items-center justify-center gap-3 p-8">
+                        <FileText className="h-16 w-16 text-slate-400" />
+                        <span className="text-center text-sm text-slate-300">{attachment.name}</span>
                       </div>
                     )}
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-3">
-                      <p className="text-xs text-slate-300 truncate">{attachment.name}</p>
+                      <p className="text-sm text-slate-300 truncate">{attachment.name}</p>
                       {attachment.size && (
-                        <p className="text-[10px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           {(attachment.size / 1024).toFixed(1)} KB
                         </p>
                       )}
