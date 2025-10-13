@@ -1,0 +1,82 @@
+import { useEffect, useMemo, useState } from 'react'
+import {
+  browserLocalPersistence,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  setPersistence,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from 'firebase/auth'
+import { firebaseAuth } from '../lib/firebase.js'
+import { AuthContext } from './auth-context.js'
+
+function ensureAuthInstance() {
+  if (!firebaseAuth) throw new Error('Firebase configuration missing. Check environment variables.')
+  return firebaseAuth
+}
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [initializing, setInitializing] = useState(true)
+
+  useEffect(() => {
+    const auth = ensureAuthInstance()
+    setPersistence(auth, browserLocalPersistence).catch(() => {})
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser)
+      setLoading(false)
+      setInitializing(false)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  const value = useMemo(() => {
+    const auth = ensureAuthInstance()
+
+    const login = async (email, password) => {
+      setLoading(true)
+      try {
+        const credentials = await signInWithEmailAndPassword(auth, email, password)
+        return credentials
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const register = async ({ email, password, displayName }) => {
+      setLoading(true)
+      try {
+        const credentials = await createUserWithEmailAndPassword(auth, email, password)
+        if (displayName) await updateProfile(credentials.user, { displayName })
+        return credentials
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const logout = async () => {
+      setLoading(true)
+      try {
+        await signOut(auth)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    return {
+      user,
+      loading,
+      initializing,
+      login,
+      register,
+      logout,
+    }
+  }, [user, loading, initializing])
+
+  if (initializing) return null
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
