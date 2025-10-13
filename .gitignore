@@ -12,8 +12,7 @@ dist
 dist-ssr
 *.local
 .env
-.env.*
-
+.env.local
 todo
 
 # Editor directories and files
