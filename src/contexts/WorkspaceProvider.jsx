@@ -4,6 +4,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -93,6 +94,7 @@ export function WorkspaceProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [tryYourselfOpen, setTryYourselfOpen] = useState(false)
   const [rightPanel, setRightPanel] = useState(defaultRightPanel)
+  const [fullNoteCache, setFullNoteCache] = useState(new Map())
   const folderRef = useRef(null)
   const initialLoadRef = useRef({ ...initialLoadState })
 
@@ -153,10 +155,15 @@ export function WorkspaceProvider({ children }) {
     })
 
     const unsubscribeNotes = onSnapshot(query(notesRef, orderBy('createdAt', 'asc')), (snapshot) => {
-      const nextNotes = snapshot.docs.map((docSnapshot) => ({
-        id: docSnapshot.id,
-        ...docSnapshot.data(),
-      }))
+      const nextNotes = snapshot.docs.map((docSnapshot) => {
+        const data = docSnapshot.data()
+        return {
+          id: docSnapshot.id,
+          folderId: data.folderId,
+          question: data.question,
+          createdAt: data.createdAt ?? null,
+        }
+      })
       setNotes(nextNotes)
       setActiveNoteIdState((current) => {
         if (current && nextNotes.some((note) => note.id === current)) return current
@@ -192,7 +199,12 @@ export function WorkspaceProvider({ children }) {
     if (activeFolderDescendants.size === 0) return []
     return notes.filter((note) => activeFolderDescendants.has(note.folderId))
   }, [notes, activeFolderDescendants, activeFolderId])
-  const activeNote = useMemo(() => notes.find((note) => note.id === activeNoteId) || null, [notes, activeNoteId])
+  const activeNote = useMemo(() => {
+    if (!activeNoteId) return null
+    const cachedFull = fullNoteCache.get(activeNoteId)
+    if (cachedFull) return cachedFull
+    return notes.find((note) => note.id === activeNoteId) || null
+  }, [notes, activeNoteId, fullNoteCache])
   const selectedFolder = useMemo(
     () => folders.find((folder) => folder.id === activeFolderId) || null,
     [folders, activeFolderId],
@@ -225,9 +237,30 @@ export function WorkspaceProvider({ children }) {
       setActiveFolderIdState(folderId)
     }
 
-    const selectNote = (noteId) => {
+    const selectNote = async (noteId) => {
       setActiveNoteIdState(noteId)
       setRightPanel({ ...defaultRightPanel })
+      
+      if (!noteId) return
+      
+      setFullNoteCache((cache) => {
+        if (cache.has(noteId)) return cache
+        
+        const noteRef = doc(db, 'users', user.uid, 'notes', noteId)
+        getDoc(noteRef).then((noteSnap) => {
+          if (noteSnap.exists()) {
+            const fullData = {
+              id: noteSnap.id,
+              ...noteSnap.data(),
+            }
+            setFullNoteCache((prev) => new Map(prev).set(noteId, fullData))
+          }
+        }).catch((error) => {
+          console.error('Not yüklenemedi', error)
+        })
+        
+        return cache
+      })
     }
 
     const openFolderForm = ({ parentId = null } = {}) => {

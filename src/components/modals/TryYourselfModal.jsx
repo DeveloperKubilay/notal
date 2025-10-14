@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Loader, Shuffle, Sparkles, ClipboardPaste } from 'lucide-react'
+import { doc, getDoc } from 'firebase/firestore'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
-import { sendMessageToModel } from '../../lib/firebase.js'
+import { sendMessageToModel, firestore } from '../../lib/firebase.js'
+import { useAuth } from '../../hooks/useAuth.js'
 
 const MotionOverlay = motion.div
 const MotionPanel = motion.div
 
 function TryYourselfModal() {
+  const { user } = useAuth()
   const { tryYourselfOpen, setTryYourselfOpen, folders, notes } = useWorkspace()
   const [selectedFolderId, setSelectedFolderId] = useState('')
   const [currentNoteId, setCurrentNoteId] = useState('')
@@ -15,19 +18,54 @@ function TryYourselfModal() {
   const [userAnswer, setUserAnswer] = useState('')
   const [checking, setChecking] = useState(false)
   const [feedback, setFeedback] = useState(null)
+  const [noteCache, setNoteCache] = useState(new Map())
 
   useEffect(() => {
     if (!tryYourselfOpen) return
+    
+    document.body.style.overflow = 'hidden'
+    
     setSelectedFolderId(folders[0]?.id || '')
     setCurrentNoteId('')
     setAskedNoteIds([])
     setUserAnswer('')
     setFeedback(null)
+    setNoteCache(new Map())
+    
+    return () => {
+      document.body.style.overflow = ''
+    }
   }, [tryYourselfOpen, folders])
+  
+  useEffect(() => {
+    if (!tryYourselfOpen || !currentNoteId || noteCache.has(currentNoteId) || !user) return
+    
+    const loadFullNote = async () => {
+      try {
+        const noteRef = doc(firestore, 'users', user.uid, 'notes', currentNoteId)
+        const noteSnap = await getDoc(noteRef)
+        
+        if (noteSnap.exists()) {
+          const fullData = {
+            id: noteSnap.id,
+            ...noteSnap.data(),
+          }
+          setNoteCache((prev) => new Map(prev).set(currentNoteId, fullData))
+        }
+      } catch (error) {
+        console.error('Not yüklenemedi', error)
+      }
+    }
+    
+    loadFullNote()
+  }, [tryYourselfOpen, currentNoteId, user, noteCache])
 
   const folderOptions = useMemo(() => folders.map((folder) => ({ value: folder.id, label: folder.name })), [folders])
   const availableNotes = useMemo(() => notes.filter((note) => note.folderId === selectedFolderId), [notes, selectedFolderId])
-  const currentNote = useMemo(() => availableNotes.find((note) => note.id === currentNoteId) || null, [availableNotes, currentNoteId])
+  const currentNote = useMemo(() => {
+    if (!currentNoteId) return null
+    return noteCache.get(currentNoteId) || availableNotes.find((note) => note.id === currentNoteId) || null
+  }, [availableNotes, currentNoteId, noteCache])
 
   const pickRandomNote = () => {
     if (availableNotes.length === 0) {
@@ -67,7 +105,11 @@ function TryYourselfModal() {
   }
 
   const checkAnswer = async () => {
-    if (!currentNote) return
+    if (!currentNote?.answer) {
+      setFeedback('Not yükleniyor...')
+      return
+    }
+    
     setChecking(true)
     
     try {
@@ -116,13 +158,13 @@ Kullanıcının verdiği cevap doğru mu? Sadece "TRUE" veya "FALSE" yaz, başka
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur px-3 md:px-0"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 backdrop-blur px-3 py-6 md:items-center md:px-0"
       onClick={handleClose}
     >
       <MotionPanel
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-100 shadow-2xl md:rounded-3xl md:p-8"
+        className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-950 p-4 pb-8 text-slate-100 shadow-2xl md:rounded-3xl md:p-8"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
