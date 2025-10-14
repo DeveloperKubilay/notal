@@ -208,7 +208,7 @@ function TopBar({ sidebarOpen, setSidebarOpen }) {
           animate={revealAll ? 'active' : 'inactive'}
         >
           {revealAll ? <Eye className="h-4 w-4 text-indigo-300 md:h-5 md:w-5" /> : <EyeOff className="h-4 w-4 text-slate-400 md:h-5 md:w-5" />}
-          <span className="hidden md:inline">{revealAll ? 'Sansürsüz' : 'Sansürlü'}</span>
+          <span className="block md:inline truncate overflow-hidden whitespace-nowrap max-w-[90px]">{revealAll ? 'Sansürsüz' : 'Sansürlü'}</span>
         </MotionButton>
         <button
           type="button"
@@ -216,7 +216,7 @@ function TopBar({ sidebarOpen, setSidebarOpen }) {
           className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-indigo-500/50 bg-indigo-500/20 px-3 py-2 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-500/30 md:flex-initial md:px-5 md:py-2.5 md:text-sm"
         >
           <Wand2 className="h-4 w-4 md:h-5 md:w-5" />
-          <span className="hidden md:inline">Kendini Dene</span>
+          <span className="block md:inline truncate overflow-hidden whitespace-nowrap max-w-[110px]">Kendini Dene</span>
         </button>
         <div className="hidden items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs text-slate-400 xl:flex">
           <span className="max-w-[150px] truncate">{user?.email}</span>

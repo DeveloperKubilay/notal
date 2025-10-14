@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "firebase":"rm -rf dist && rm -rf .firebase && vite build && firebase deploy --only hosting",
+    "firebase":"vite build && firebase deploy --only hosting && rm -rf dist && rm -rf .firebase",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -14,6 +14,7 @@ When you can use bad words
 `
 
 function ChatPage() {
+  const textareaRef = useRef(null)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -59,6 +60,9 @@ function ChatPage() {
     setInput('')
     setSelectedImage(null)
     setImagePreview(null)
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '44px'
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -208,13 +212,33 @@ function ChatPage() {
             >
               <ImageIcon className="h-5 w-5" />
             </button>
-            <input
-              type="text"
+            <textarea
+              ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={e => {
+                setInput(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 400) + 'px';
+                e.target.style.overflow = 'hidden';
+              }}
+              onInput={e => {
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 400) + 'px';
+                e.target.style.overflow = 'hidden';
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!loading && (input.trim() || selectedImage)) {
+                    handleSubmit(e);
+                  }
+                }
+              }}
               placeholder="Mesajını yaz..."
               disabled={loading}
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:px-4"
+              rows={1}
+              className="flex-1 resize-none rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:px-4"
+              style={{ minHeight: 44, maxHeight: 400, overflow: 'hidden' }}
             />
             <button
               type="submit"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { ChevronDown, ChevronRight, FileText, Folder, FolderPlus, Upload, Trash2, X } from 'lucide-react'
 import { useWorkspace } from '../../hooks/useWorkspace.js'
 
@@ -14,6 +14,27 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
     openNoteForm,
     deleteFolder,
   } = useWorkspace()
+  const [folderSearch, setFolderSearch] = useState('')
+  const filterFolders = useCallback((nodes, term) => {
+    if (!term) return nodes
+    return nodes
+      .map((node) => {
+        const children = node.children ? filterFolders(node.children, term) : []
+        if (node.name.toLowerCase().includes(term.toLowerCase()) || children.length > 0) {
+          return { ...node, children }
+        }
+        return null
+      })
+      .filter(Boolean)
+  }, [])
+  const filteredFolderTree = useMemo(() => filterFolders(folderTree || [], folderSearch), [folderTree, folderSearch, filterFolders])
+  const [searchTerm, setSearchTerm] = useState('')
+  const filteredNotes = useMemo(() => {
+    if (!searchTerm) return folderNotes
+    return folderNotes.filter(note =>
+      note.question?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [searchTerm, folderNotes])
   const [expandedFolders, setExpandedFolders] = useState(new Set())
   const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0, folderId: null })
 
@@ -90,7 +111,15 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
         <div key={node.id} className="flex flex-col">
           <button
             type="button"
-            onClick={() => setActiveFolderId(node.id)}
+            onClick={() => {
+              setActiveFolderId(node.id);
+              // Klasör değişince ilk notu otomatik aç
+              setTimeout(() => {
+                if (folderNotes && folderNotes.length > 0) {
+                  setActiveNoteId(folderNotes[0].id);
+                }
+              }, 0);
+            }}
             onContextMenu={(event) => handleContextMenu(event, node.id)}
             className={`group flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition ${
               isActive ? 'bg-indigo-500/20 text-indigo-200' : 'text-slate-300 hover:bg-slate-900/80'
@@ -139,11 +168,9 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
         />
       )}
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-800 bg-slate-950/95 backdrop-blur transition-transform duration-300 lg:static lg:z-0 lg:bg-slate-950/60 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3 lg:border-0 lg:py-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">Klasörler</span>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="border-b border-slate-800 px-4 py-3 lg:border-0 lg:py-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-2">Klasörler</span>
             <button
               type="button"
               onClick={() => openFolderForm({ parentId: activeFolderId })}
@@ -160,9 +187,19 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               <X className="h-5 w-5" />
             </button>
           </div>
+          <div className="pt-2 pb-0">
+            <input
+              type="text"
+              placeholder="Klasör ara..."
+              className="w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-sm text-slate-200 placeholder-slate-400 focus:border-indigo-400 focus:outline-none transition-all"
+              style={{ fontWeight: 500, fontSize: '1rem', minHeight: 40 }}
+              value={folderSearch}
+              onChange={e => setFolderSearch(e.target.value)}
+            />
+          </div>
         </div>
-        <nav className="max-h-[40vh] space-y-1 overflow-y-auto px-2 py-2">{renderFolderTree(folderTree)}</nav>
-        <div className="border-t border-slate-800 px-2 py-3">
+  <nav className="max-h-[40vh] space-y-1 overflow-y-auto px-2 py-1">{renderFolderTree(filteredFolderTree)}</nav>
+        <div className="border-t border-slate-800 px-2 py-3"> 
         <button
           type="button"
           disabled={!activeFolderId}
@@ -175,8 +212,16 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           <FileText className="h-4 w-4" />
           Yeni not
         </button>
+        <input
+          type="text"
+          placeholder="Not ara..."
+          className="mb-2 w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-base text-slate-200 placeholder:text-base placeholder-slate-400 focus:border-indigo-400 focus:outline-none transition-all"
+          style={{ fontWeight: 500, fontSize: '1.05rem', minHeight: 40 }}
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
         <div className="max-h-[50vh] space-y-1 overflow-y-auto">
-          {folderNotes.map((note) => (
+          {filteredNotes.map((note) => (
             <button
               key={note.id}
               type="button"
@@ -195,7 +240,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               )}
             </button>
           ))}
-          {folderNotes.length === 0 && (
+          {filteredNotes.length === 0 && (
             <div className="rounded-xl border border-dashed border-slate-800 px-3 py-4 text-center text-xs text-slate-500">
               Not eklemek için klasöre sağ tıkla
             </div>
