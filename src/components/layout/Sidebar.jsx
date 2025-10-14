@@ -55,10 +55,20 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
     event.preventDefault()
     const menuWidth = 220
     const menuHeight = 120
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-    const nextX = Math.min(event.clientX, viewportWidth - menuWidth - 12)
-    const nextY = Math.min(event.clientY, viewportHeight - menuHeight - 12)
+    
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left - 15
+    const y = event.clientY - rect.top - 50
+    
+    const sidebarRect = event.currentTarget.closest('aside').getBoundingClientRect()
+    const absoluteX = sidebarRect.left + x
+    const absoluteY = sidebarRect.top + y
+    
+    const maxX = window.innerWidth - menuWidth - 4
+    const maxY = window.innerHeight - menuHeight - 4
+    const nextX = Math.max(4, Math.min(absoluteX, maxX))
+    const nextY = Math.max(4, Math.min(absoluteY, maxY))
+    
     setContextMenu({ open: true, x: nextX, y: nextY, folderId })
   }
 
@@ -180,7 +190,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
             >
               <FileText className="h-4 w-4 flex-shrink-0 text-slate-500" />
               <span className="flex-1 truncate">{note.question}</span>
-              {note.attachments && note.attachments.length > 0 && (
+              {note.hasAttachments && (
                 <Upload className="h-4 w-4 flex-shrink-0 text-emerald-400" />
               )}
             </button>
@@ -194,8 +204,8 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
       </div>
       {contextMenu.open && (
         <div
-          className="fixed z-50 w-56 rounded-xl border border-slate-700 bg-slate-900/95 p-2 shadow-lg"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
+          className="fixed z-[9999] w-56 rounded-xl border border-slate-700 bg-slate-900/95 backdrop-blur p-2 shadow-2xl"
+          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
         >
           <button
             type="button"

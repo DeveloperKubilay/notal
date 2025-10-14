@@ -430,7 +430,8 @@ function NoteViewer() {
           <button
             type="button"
             onClick={() => setEditMode(true)}
-            className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-indigo-400 hover:text-indigo-300 flex items-center gap-2 md:px-4"
+            disabled={!activeNote.answer}
+            className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-indigo-400 hover:text-indigo-300 flex items-center gap-2 md:px-4 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Pencil className="h-4 w-4" />
             <span className="hidden sm:inline">Düzenle</span>
@@ -446,6 +447,16 @@ function NoteViewer() {
           </button>
         </div>
       </div>
+      
+      {!activeNote.answer ? (
+        <div className="flex-1 flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+            <p className="text-sm text-slate-400">İçerik yükleniyor...</p>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">Cevap</span>
@@ -509,6 +520,8 @@ function NoteViewer() {
           </div>
         )}
       </div>
+        </>
+      )}
     </MotionSection>
   )
 }

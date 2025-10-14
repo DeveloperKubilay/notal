@@ -7,6 +7,10 @@
 
 > Notlarını yönet, AI ile öğren, kendini test et 🚀
 
+![](https://raw.githubusercontent.com/DeveloperKubilay/notal/refs/heads/main/imgs/1.png)
+![](https://raw.githubusercontent.com/DeveloperKubilay/notal/refs/heads/main/imgs/2.png)
+![](https://raw.githubusercontent.com/DeveloperKubilay/notal/refs/heads/main/imgs/3.png)
+
 ## ✨ Nedir Bu?
 
 Notal, sıradan bir not uygulaması değil. Google Gemini AI entegrasyonuyla notlarını interaktif öğrenme materyaline dönüştüren, modern bir web uygulaması.

@@ -44,6 +44,35 @@ function sortByCreatedAt(a, b) {
   return aTime - bTime
 }
 
+function normalizeAttachments(value) {
+  return Array.isArray(value) ? value : []
+}
+
+function mapNoteMetadata(docSnapshot) {
+  const data = docSnapshot.data()
+  const attachments = normalizeAttachments(data.attachments)
+  return {
+    id: docSnapshot.id,
+    folderId: data.folderId ?? null,
+    question: data.question ?? '',
+    createdAt: data.createdAt ?? null,
+    hasAttachments: attachments.length > 0,
+  }
+}
+
+function mapFullNote(id, data) {
+  const attachments = normalizeAttachments(data.attachments)
+  return {
+    id,
+    ...data,
+    folderId: data.folderId ?? null,
+    question: data.question ?? '',
+    answer: data.answer ?? '',
+    attachments,
+    hasAttachments: attachments.length > 0,
+  }
+}
+
 function groupFoldersByParent(folders) {
   return folders.reduce((acc, folder) => {
     const parentKey = normalizeParentId(folder.parentId)
@@ -97,6 +126,10 @@ export function WorkspaceProvider({ children }) {
   const [fullNoteCache, setFullNoteCache] = useState(new Map())
   const folderRef = useRef(null)
   const initialLoadRef = useRef({ ...initialLoadState })
+  const isActiveNoteCached = useMemo(
+    () => (activeNoteId ? fullNoteCache.has(activeNoteId) : false),
+    [activeNoteId, fullNoteCache],
+  )
 
   useEffect(() => {
     folderRef.current = activeFolderId
@@ -118,6 +151,7 @@ export function WorkspaceProvider({ children }) {
       setActiveNoteIdState(null)
       setLoading(false)
       setRightPanel({ ...defaultRightPanel })
+      setFullNoteCache(new Map())
       initialLoadRef.current = { ...initialLoadState }
       return undefined
     }
@@ -155,15 +189,7 @@ export function WorkspaceProvider({ children }) {
     })
 
     const unsubscribeNotes = onSnapshot(query(notesRef, orderBy('createdAt', 'asc')), (snapshot) => {
-      const nextNotes = snapshot.docs.map((docSnapshot) => {
-        const data = docSnapshot.data()
-        return {
-          id: docSnapshot.id,
-          folderId: data.folderId,
-          question: data.question,
-          createdAt: data.createdAt ?? null,
-        }
-      })
+      const nextNotes = snapshot.docs.map(mapNoteMetadata)
       setNotes(nextNotes)
       setActiveNoteIdState((current) => {
         if (current && nextNotes.some((note) => note.id === current)) return current
@@ -188,6 +214,27 @@ export function WorkspaceProvider({ children }) {
       unsubscribePlans()
     }
   }, [user])
+
+  useEffect(() => {
+    if (!user || !activeNoteId || isActiveNoteCached) return
+
+    const db = ensureFirestore()
+    const noteRef = doc(db, 'users', user.uid, 'notes', activeNoteId)
+
+    getDoc(noteRef)
+      .then((noteSnap) => {
+        if (!noteSnap.exists()) return
+        const normalized = mapFullNote(noteSnap.id, noteSnap.data())
+        setFullNoteCache((prev) => {
+          const next = new Map(prev)
+          next.set(noteSnap.id, normalized)
+          return next
+        })
+      })
+      .catch((error) => {
+        console.error('Not yüklenemedi', error)
+      })
+  }, [user, activeNoteId, isActiveNoteCached])
 
   const folderTree = useMemo(() => buildFolderTree(folders), [folders])
   const activeFolderDescendants = useMemo(
@@ -237,30 +284,9 @@ export function WorkspaceProvider({ children }) {
       setActiveFolderIdState(folderId)
     }
 
-    const selectNote = async (noteId) => {
+    const selectNote = (noteId) => {
       setActiveNoteIdState(noteId)
       setRightPanel({ ...defaultRightPanel })
-      
-      if (!noteId) return
-      
-      setFullNoteCache((cache) => {
-        if (cache.has(noteId)) return cache
-        
-        const noteRef = doc(db, 'users', user.uid, 'notes', noteId)
-        getDoc(noteRef).then((noteSnap) => {
-          if (noteSnap.exists()) {
-            const fullData = {
-              id: noteSnap.id,
-              ...noteSnap.data(),
-            }
-            setFullNoteCache((prev) => new Map(prev).set(noteId, fullData))
-          }
-        }).catch((error) => {
-          console.error('Not yüklenemedi', error)
-        })
-        
-        return cache
-      })
     }
 
     const openFolderForm = ({ parentId = null } = {}) => {
@@ -409,15 +435,40 @@ export function WorkspaceProvider({ children }) {
         attachments: finalAttachments,
         updatedAt: serverTimestamp(),
       })
+
+      setFullNoteCache((prev) => {
+        if (!prev.has(noteId)) return prev
+        const next = new Map(prev)
+        const existing = next.get(noteId) || { id: noteId }
+        next.set(noteId, {
+          ...existing,
+          question,
+          answer,
+          attachments: finalAttachments,
+          hasAttachments: finalAttachments.length > 0,
+        })
+        return next
+      })
     }
 
     const deleteNote = async ({ noteId }) => {
       if (!noteId) throw new Error('Note id is required')
       const noteRef = doc(db, 'users', user.uid, 'notes', noteId)
-      const note = notes.find(n => n.id === noteId)
-      
-      if (note?.attachments && note.attachments.length > 0 && firebaseStorage) {
-        for (const attachment of note.attachments) {
+      let noteForCleanup = fullNoteCache.get(noteId)
+
+      if (!noteForCleanup) {
+        try {
+          const noteSnap = await getDoc(noteRef)
+          if (noteSnap.exists()) {
+            noteForCleanup = mapFullNote(noteSnap.id, noteSnap.data())
+          }
+        } catch (error) {
+          console.error('Not yüklenemedi', error)
+        }
+      }
+
+      if (noteForCleanup?.attachments && noteForCleanup.attachments.length > 0 && firebaseStorage) {
+        for (const attachment of noteForCleanup.attachments) {
           try {
             const storageRef = ref(firebaseStorage, `users/${user.uid}/notes/${noteId}/${attachment.name}`)
             await deleteObject(storageRef)
@@ -428,6 +479,12 @@ export function WorkspaceProvider({ children }) {
       }
       
       await deleteDoc(noteRef)
+      setFullNoteCache((prev) => {
+        if (!prev.has(noteId)) return prev
+        const next = new Map(prev)
+        next.delete(noteId)
+        return next
+      })
       
       if (activeNoteId === noteId) {
         setActiveNoteIdState(null)
@@ -473,7 +530,7 @@ export function WorkspaceProvider({ children }) {
       openNoteForm,
       closeRightPanel,
     }
-  }, [user, activeFolderId, activeNoteId, folders, notes])
+  }, [user, activeFolderId, activeNoteId, folders, notes, fullNoteCache])
 
   const value = useMemo(
     () => ({
