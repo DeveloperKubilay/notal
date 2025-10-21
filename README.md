@@ -24,10 +24,6 @@ Notal, sıradan bir not uygulaması değil. Google Gemini AI entegrasyonuyla not
 - 📎 **Dosya Ekleme**: Resim, PDF, her şey
 - ⚡ **Real-time Sync**: Her şey anlık güncelleniyor
 
-## 🎥 Demo
-
-[Buraya GIF veya ekran görüntüleri eklenebilir]
-
 ## 🛠️ Teknolojiler
 
 **Frontend:**
