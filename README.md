@@ -167,7 +167,7 @@ Detaylı yapı için: [PROJE-YAPISI.md](./PROJE-YAPISI.md)
 
 ## 📝 Lisans
 
-MIT License - İstediğin gibi kullan 🎉
+Apache License 2.0 License - İstediğin gibi kullan 🎉
 
 ## 🤝 Katkıda Bulunma
 
